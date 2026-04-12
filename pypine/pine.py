@@ -62,6 +62,17 @@ class Pine:
         INT32 = 4,
         INT64 = 8,
 
+    class EmuStatus(IntEnum):
+        RUNNING = 0,
+        PAUSED = 1,
+        SHUTDOWN = 2,
+
+    class ConnectionError(Exception):
+        pass
+
+    class DuplicateConnectionError(Exception):
+        pass
+
     def __init__(self, slot: int = 28011):
         if not 0 < slot <= 65536:
             raise ValueError("Provided slot number is outside valid range")
@@ -70,7 +81,7 @@ class Pine:
         self._sock_state: bool = False
         # self._init_socket()
 
-    def _init_socket(self) -> None:
+    def _init_socket(self) -> bool:
         if system() == "Windows":
             socket_family = socket.AF_INET
             socket_name = ("127.0.0.1", self._slot)
@@ -93,20 +104,33 @@ class Pine:
         except socket.error:
             self._sock.close()
             self._sock_state = False
-            return
+            return False
 
         self._sock_state = True
+        return True
 
     def connect(self) -> None:
-        if not self._sock_state:
-            self._init_socket()
+        if not self.is_connected():
+            if not self._init_socket():
+                raise Pine.ConnectionError()
+
+            if not self.is_connected():
+                raise Pine.DuplicateConnectionError()
 
     def disconnect(self) -> None:
         if self._sock_state:
             self._sock.close()
+            self._sock_state = False
 
     def is_connected(self) -> bool:
-        return self._sock_state
+        try:
+            _ = self.get_emu_status()
+        except socket.error:
+            self._sock_state = False
+            self._sock.close()
+            return False
+
+        return True
 
     def read_int8(self, address: int) -> int:
         request = Pine._create_request(Pine.IPCCommand.READ8, address, 9)
@@ -197,6 +221,11 @@ class Pine:
         request = Pine.to_bytes(5, 4) + Pine.to_bytes(Pine.IPCCommand.ID, 1)
         response = self._send_request(request)
         return response[9:-1].decode("ascii")
+
+    def get_emu_status(self) -> Pine.EmuStatus:
+        request = Pine.to_bytes(5, 4) + Pine.to_bytes(Pine.IPCCommand.STATUS, 1)
+        response = self._send_request(request)
+        return Pine.EmuStatus(Pine.from_bytes(response[-4:]))
 
     def _send_request(self, request: bytes) -> bytes:
         if not self._sock_state:
