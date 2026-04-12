@@ -13,9 +13,9 @@ performant.
 """
 import os
 import struct
+import socket
 from enum import IntEnum
 from platform import system
-import socket
 
 
 class Pine:
@@ -161,7 +161,7 @@ class Pine:
 
     def write_float(self, address: int, value: float) -> None:
         request = Pine._create_request(Pine.IPCCommand.WRITE32, address, 9 + Pine.DataSize.INT32)
-        request + struct.pack("<f", value)
+        request += struct.pack("<f", value)
         self._send_request(request)
 
     def write_bytes(self, address: int, data: bytes) -> None:
@@ -188,6 +188,10 @@ class Pine:
                 request += data[bytes_written:bytes_written + 1]
                 self._send_request(request)
                 bytes_written += 1
+
+    def write_string(self, address: int, value: str) -> None:
+        data = value.encode("ascii") + b'\x00'
+        self.write_bytes(address, data)
 
     def get_game_id(self) -> str:
         request = Pine.to_bytes(5, 4) + Pine.to_bytes(Pine.IPCCommand.ID, 1)
