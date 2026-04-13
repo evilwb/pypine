@@ -87,8 +87,13 @@ class Pine:
             socket_name = ("127.0.0.1", self._slot)
         elif system() == "Linux":
             socket_family = socket.AF_UNIX
-            socket_name = os.environ.get("XDG_RUNTIME_DIR", "/tmp")
-            socket_name += "/pcsx2.sock"
+            base_socket = os.environ.get("XDG_RUNTIME_DIR", "/tmp")
+            socket_file = "/pcsx2.sock"
+            # Flatpak Socket Path
+            socket_name = base_socket + "/.flatpak/net.pcsx2.PCSX2/xdg-run" + socket_file
+            # Use default XDG_RUNTIME_DIR or /tmp if Flatpak socket is not detected
+            if not os.access(socket_name):
+                socket_name = base_socket + socket_file
         elif system() == "Darwin":
             socket_family = socket.AF_UNIX
             socket_name = os.environ.get("TMPDIR", "/tmp")
@@ -284,4 +289,3 @@ class Pine:
     @staticmethod
     def from_bytes(arr: bytes) -> int:
         return int.from_bytes(arr, byteorder="little")
-
