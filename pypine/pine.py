@@ -110,7 +110,8 @@ class Pine:
             socket_path = os.path.join(os.environ.get("TMPDIR", "/tmp"), socket_file_name)
         else:
             socket_family = socket.AF_UNIX
-            socket_path = os.path.join("/tmp", socket_file_name)
+            # Other Unix systems may use the XDG spec, so XDG_RUN should also be checked for
+            socket_path = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), socket_file_name)
 
         try:
             self._sock = socket.socket(socket_family, socket.SOCK_STREAM)
