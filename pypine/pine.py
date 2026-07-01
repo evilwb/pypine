@@ -99,12 +99,12 @@ class Pine:
             socket_family = socket.AF_UNIX
             base_path = os.environ.get("XDG_RUNTIME_DIR", "/tmp")
 
-            # Flatpak Socket Path
-            socket_path = os.path.join(base_path, ".flatpak/net.pcsx2.PCSX2/xdg-run", socket_file_name)
-
-            # Use default XDG_RUNTIME_DIR or /tmp if Flatpak socket is not detected
-            if not os.access(socket_path, os.W_OK):
-                socket_path = os.path.join(base_path, socket_file_name)
+            # Write Permissions are required to connect to Unix Sockets in Linux
+            if os.access(os.path.join(base_path, socket_file_name), os.W_OK):
+               socket_path = os.path.join(base_path, socket_file_name)
+            else:
+                # Find the Socket in the Flatpak runtime otherwise
+                socket_path = os.path.join(base_path, ".flatpak/net.pcsx2.PCSX2/xdg-run", socket_file_name)
         elif system() == "Darwin":
             socket_family = socket.AF_UNIX
             socket_path = os.path.join(os.environ.get("TMPDIR", "/tmp"), socket_file_name)
