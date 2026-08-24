@@ -284,9 +284,30 @@ class Pine:
     def batch_read_int32(self, addresses: list[int]) -> list[int]:
         return self.batch_read([(self.DataSize.INT32, a) for a in addresses])
 
+    def batch_read_int64(self, addresses: list[int]) -> list[int]:
+        return self.batch_read([(self.DataSize.INT64, a) for a in addresses])
+
+    def batch_write_int8(self, operations: list[tuple[int, int]]) -> None:
+        self.batch_write([
+            (self.DataSize.INT8, address, value.to_bytes(1, "little"))
+            for address, value in operations
+        ])
+
+    def batch_write_int16(self, operations: list[tuple[int, int]]) -> None:
+        self.batch_write([
+            (self.DataSize.INT16, address, value.to_bytes(2, "little"))
+            for address, value in operations
+        ])
+
     def batch_write_int32(self, operations: list[tuple[int, int]]) -> None:
         self.batch_write([
             (self.DataSize.INT32, address, value.to_bytes(4, "little"))
+            for address, value in operations
+        ])
+
+    def batch_write_int64(self, operations: list[tuple[int, int]]) -> None:
+        self.batch_write([
+            (self.DataSize.INT64, address, value.to_bytes(8, "little"))
             for address, value in operations
         ])
 

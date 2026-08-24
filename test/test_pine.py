@@ -100,6 +100,39 @@ class TestPineRequests(unittest.TestCase):
         )
         self.assertEqual(self.pine.batch_read([]), [])
 
+    def test_batch_read_sized_wrappers(self) -> None:
+        for method, command, data in [
+            (self.pine.batch_read_int8, self.cmd.READ8, b"\x07"),
+            (self.pine.batch_read_int16, self.cmd.READ16, b"\x07\x00"),
+            (self.pine.batch_read_int32, self.cmd.READ32, b"\x07\x00\x00\x00"),
+            (self.pine.batch_read_int64, self.cmd.READ64, b"\x07" + bytes(7)),
+        ]:
+            with self.subTest(command=command.name):
+                self.pine.requests = []
+                self.pine.replies = [data]
+                self.assertEqual(method([0x200000]), [7])
+                body = bytes([command]) + (0x200000).to_bytes(4, "little")
+                self.assertEqual(
+                    self.pine.requests,
+                    [(len(body) + 4).to_bytes(4, "little") + body]
+                )
+
+    def test_batch_write_sized_wrappers(self) -> None:
+        for method, command, data in [
+            (self.pine.batch_write_int8, self.cmd.WRITE8, b"\x07"),
+            (self.pine.batch_write_int16, self.cmd.WRITE16, b"\x07\x00"),
+            (self.pine.batch_write_int32, self.cmd.WRITE32, b"\x07\x00\x00\x00"),
+            (self.pine.batch_write_int64, self.cmd.WRITE64, b"\x07" + bytes(7)),
+        ]:
+            with self.subTest(command=command.name):
+                self.pine.requests = []
+                method([(0x200000, 7)])
+                body = bytes([command]) + (0x200000).to_bytes(4, "little") + data
+                self.assertEqual(
+                    self.pine.requests,
+                    [(len(body) + 4).to_bytes(4, "little") + body]
+                )
+
     def test_batch_write(self) -> None:
         self.pine.batch_write_int32([(0x200000, 7)])
         self.pine.batch_write_float([(0x200004, 0.5)])
