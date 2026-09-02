@@ -133,6 +133,20 @@ class TestPineRequests(unittest.TestCase):
                     [(len(body) + 4).to_bytes(4, "little") + body]
                 )
 
+    def test_save_state(self) -> None:
+        self.pine.save_state(3)
+        body = bytes([self.cmd.SAVE_STATE, 3])
+        self.assertEqual(
+            self.pine.requests, [(len(body) + 4).to_bytes(4, "little") + body]
+        )
+
+    def test_load_state(self) -> None:
+        self.pine.load_state(7)
+        body = bytes([self.cmd.LOAD_STATE, 7])
+        self.assertEqual(
+            self.pine.requests, [(len(body) + 4).to_bytes(4, "little") + body]
+        )
+
     def test_batch_write(self) -> None:
         self.pine.batch_write_int32([(0x200000, 7)])
         self.pine.batch_write_float([(0x200004, 0.5)])

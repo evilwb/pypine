@@ -317,6 +317,22 @@ class Pine:
             for address, value in operations
         ])
 
+    def save_state(self, slot: int) -> None:
+        """ Saves a savestate to the given slot. """
+        self._check_state_slot(slot)
+        self._send_request(self._create_request(self.IPCCommand.SAVE_STATE, slot, 6, address_size=1))
+
+    def load_state(self, slot: int) -> None:
+        """ Loads a savestate from the given slot. """
+        self._check_state_slot(slot)
+        self._send_request(self._create_request(self.IPCCommand.LOAD_STATE, slot, 6, address_size=1))
+
+    @staticmethod
+    def _check_state_slot(slot: int) -> None:
+        """Savestates can only be in the range 1 to 10 inclusive, safer to call error early than wait for savestate to fail"""
+        if not 1 <= slot <= 10:
+            raise ValueError(f"Save state slot must be between 1 and 10, got {slot}")
+
     def get_game_id(self) -> str:
         request = self.to_bytes(5, 4) + self.to_bytes(self.IPCCommand.ID, 1)
         response = self._send_request(request)
@@ -367,10 +383,10 @@ class Pine:
         return result
 
     @staticmethod
-    def _create_request(command: IPCCommand, address: int, size: int = 0) -> bytes:
+    def _create_request(command: IPCCommand, address: int, size: int = 0, address_size: int = 4) -> bytes:
         ipc = Pine.to_bytes(size, 4)
         ipc += Pine.to_bytes(command, 1)
-        ipc += Pine.to_bytes(address, 4)
+        ipc += Pine.to_bytes(address, address_size)
         return ipc
 
     @staticmethod
